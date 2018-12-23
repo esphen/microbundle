@@ -8,7 +8,7 @@ import cssnano from 'cssnano';
 import { rollup, watch } from 'rollup';
 import commonjs from 'rollup-plugin-commonjs';
 import babel from 'rollup-plugin-babel';
-import { loadPartialConfig, DEFAULT_EXTENSIONS } from '@babel/core';
+import { DEFAULT_EXTENSIONS } from '@babel/core';
 import nodeResolve from 'rollup-plugin-node-resolve';
 import { terser } from 'rollup-plugin-terser';
 import postcss from 'rollup-plugin-postcss';
@@ -227,50 +227,59 @@ export default async function microbundle(options) {
 }
 
 function createBabelConfig(options) {
-	const partialConfig = loadPartialConfig();
-	const hasBabelConfigFile = partialConfig.hasFilesystemConfig();
-
-	// Allow project to configure babel with local config file
-	if (hasBabelConfigFile) {
-		return {
-			extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx'],
-		};
-	}
-
-	// No babelrc exists, use default config
-	// TODO move this into a separate babel-preset-microbundle package
 	return {
-		babelrc: false,
-		extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx'],
-		presets: [
-			[require.resolve('@babel/preset-react'), { pragma: options.jsx }],
-			[
-				require.resolve('@babel/preset-env'),
-				{
-					loose: true,
-					exclude: [
-						// Disabling preset-env async/await support so we can use
-						// plugin-transform-async-to-promises
-						'transform-async-to-generator',
-						'transform-regenerator',
+		options: {
+			extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx'],
+		},
+		config(cfg) {
+			// Allow project to configure babel with local config file
+			if (cfg.hasFilesystemConfig()) {
+				console.log('IN IF', cfg.options);
+				return cfg.options;
+				// return {
+				// ...cfg.options,
+				// extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx'],
+				// };
+			}
+
+			console.log('NOT IN IF', cfg.options);
+
+			// No babelrc exists, use default config
+			// TODO move this into a separate babel-preset-microbundle package
+			return {
+				...cfg.options,
+				babelrc: false,
+				presets: [
+					[require.resolve('@babel/preset-react'), { pragma: options.jsx }],
+					[
+						require.resolve('@babel/preset-env'),
+						{
+							loose: true,
+							exclude: [
+								// Disabling preset-env async/await support so we can use
+								// plugin-transform-async-to-promises
+								'transform-async-to-generator',
+								'transform-regenerator',
+							],
+						},
 					],
-				},
-			],
-		],
-		plugins: [
-			[
-				require.resolve('babel-plugin-transform-async-to-promises'),
-				{ inlineHelpers: true, externalHelpers: true },
-			],
-			[
-				require.resolve('@babel/plugin-proposal-class-properties'),
-				{ loose: true },
-			],
-			[
-				require.resolve('@babel/plugin-transform-for-of'),
-				{ assumeArray: true },
-			],
-		],
+				],
+				plugins: [
+					[
+						require.resolve('babel-plugin-transform-async-to-promises'),
+						{ inlineHelpers: true, externalHelpers: true },
+					],
+					[
+						require.resolve('@babel/plugin-proposal-class-properties'),
+						{ loose: true },
+					],
+					[
+						require.resolve('@babel/plugin-transform-for-of'),
+						{ assumeArray: true },
+					],
+				],
+			};
+		},
 	};
 }
 
@@ -425,7 +434,7 @@ function createConfig(options, entry, format, writeMeta) {
 							},
 						}),
 					!useTypescript && flow({ all: true, pretty: true }),
-					babel(createBabelConfig(options)),
+					babel.custom(() => createBabelConfig(options)),
 					{
 						// Custom plugin that removes shebang from code because newer
 						// versions of bublé bundle their own private version of `acorn`

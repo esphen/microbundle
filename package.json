@@ -59,7 +59,7 @@
     "gzip-size": "^5.0.0",
     "pretty-bytes": "^5.1.0",
     "rollup": "^0.67.3",
-    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-babel": "../rollup-plugin-babel",
     "rollup-plugin-bundle-size": "^1.0.1",
     "rollup-plugin-commonjs": "^9.0.0",
     "rollup-plugin-es3": "^1.1.0",
